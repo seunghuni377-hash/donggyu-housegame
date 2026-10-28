@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>지진 버티기 - 내진 설계 챌린지</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#0f172a;color:#0f172a;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;overflow:hidden}
+button{font-family:inherit;cursor:pointer;border:0}
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:1100px;margin:0 auto;background:#f1f5f9}
+header{background:#0f172a;color:#fff;padding:8px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+header h1{font-size:15px;font-weight:800;letter-spacing:-.3px;white-space:nowrap}
+header h1 span{color:#fb923c}
+#tabs{display:flex;gap:5px;flex:1;min-width:200px}
+.tab{flex:1;min-width:0;max-width:92px;padding:5px 2px;border-radius:8px;background:#1e293b;color:#94a3b8;font-size:12px;font-weight:700;text-align:center;line-height:1.2}
+.tab small{display:block;font-size:10px;font-weight:600;opacity:.9;min-height:12px}
+.tab.cur{background:#f97316;color:#fff}
+.tab.locked{opacity:.4;cursor:not-allowed}
+#budgetBox{min-width:150px;text-align:right;font-size:12px;color:#cbd5e1}
+#budgetBox b{font-size:17px;color:#fff}
+#budgetBar{height:6px;background:#334155;border-radius:3px;margin-top:3px;overflow:hidden}
+#budgetBar i{display:block;height:100%;background:#22c55e;width:0;transition:width .15s,background .15s}
+#tip{background:#fff7ed;color:#9a3412;border-bottom:1px solid #fed7aa;padding:6px 12px;font-size:12.5px;line-height:1.45}
+#tip b{color:#c2410c}
+main{flex:1;min-height:0;position:relative}
+canvas{width:100%;height:100%;display:block;touch-action:manipulation}
+#toast{position:absolute;left:50%;top:84px;transform:translateX(-50%);background:#0f172a;color:#fff;padding:8px 14px;border-radius:999px;font-size:13px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .2s;white-space:nowrap}
+#toast.on{opacity:.95}
+#bottom{background:#fff;border-top:1px solid #e2e8f0;padding:8px 10px;display:flex;gap:6px;align-items:stretch}
+#tools{display:flex;gap:6px;flex:1;overflow-x:auto;scrollbar-width:none}
+#tools::-webkit-scrollbar{display:none}
+.tool{flex:0 0 auto;min-width:66px;min-height:48px;padding:5px 8px;border-radius:10px;background:#f1f5f9;border:2px solid transparent;font-size:12px;font-weight:800;color:#0f172a;line-height:1.25;text-align:center}
+.tool small{display:block;font-size:10.5px;font-weight:600;color:#64748b}
+.tool i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.tool.sel{border-color:#f97316;background:#fff7ed}
+.tool.off{opacity:.38;cursor:not-allowed}
+.tool.on{border-color:#2563eb;background:#eff6ff}
+#go{flex:0 0 auto;min-width:104px;border-radius:12px;background:#dc2626;color:#fff;font-size:15px;font-weight:800;padding:0 14px}
+#go:active{transform:scale(.97)}
+#go.stop{background:#475569}
+.ov{position:absolute;inset:0;background:rgba(15,23,42,.72);display:flex;align-items:center;justify-content:center;padding:14px;overflow:auto;z-index:5}
+.ov[hidden]{display:none}
+.card{background:#fff;border-radius:18px;max-width:430px;width:100%;padding:18px 18px 16px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.card h2{font-size:20px;letter-spacing:-.4px;margin-bottom:4px}
+.card p{font-size:13.5px;line-height:1.55;color:#334155}
+.card ul{margin:8px 0 10px 18px;font-size:13px;line-height:1.6;color:#334155}
+.card input{width:100%;padding:11px 12px;border:2px solid #cbd5e1;border-radius:10px;font-size:16px;margin:8px 0;font-family:inherit}
+.card input:focus{outline:0;border-color:#f97316}
+.btns{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.btn{flex:1;min-width:110px;padding:12px;border-radius:12px;font-size:14px;font-weight:800;background:#e2e8f0;color:#0f172a}
+.btn.pri{background:#f97316;color:#fff}
+.btn.dark{background:#0f172a;color:#fff}
+.stars{font-size:34px;letter-spacing:4px;margin:2px 0 6px;color:#f59e0b}
+.stars .x{color:#cbd5e1}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}
+.stat{background:#f1f5f9;border-radius:10px;padding:7px 6px;text-align:center;font-size:11px;color:#64748b}
+.stat b{display:block;font-size:16px;color:#0f172a}
+.dm{margin:8px 0 4px;font-size:12px}
+.dm div{display:flex;align-items:center;gap:6px;margin:2px 0}
+.dm span.l{width:44px;color:#475569;font-weight:700}
+.dm span.bar{flex:1;height:9px;background:#e2e8f0;border-radius:5px;overflow:hidden}
+.dm span.bar i{display:block;height:100%}
+.dm span.v{width:36px;text-align:right;color:#475569}
+.hint{background:#fef9c3;border-radius:10px;padding:9px 11px;font-size:12.5px;line-height:1.5;color:#713f12;margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+th,td{padding:6px 4px;text-align:center;border-bottom:1px solid #e2e8f0}
+th{color:#64748b;font-size:11px}
+td.n{text-align:left;font-weight:700}
+tr.me td{background:#fff7ed}
+.code{font-size:11.5px;color:#64748b;margin-top:8px;word-break:break-all}
+@media (max-width:520px){header h1{font-size:13px}.tab{font-size:11px}#budgetBox{min-width:120px}.tool{min-width:58px;font-size:11px}#go{min-width:84px;font-size:14px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>지진 <span>버티기</span></h1>
+    <div id="tabs"></div>
+    <div id="budgetBox">예산 <b id="bSpent">0</b> / <span id="bMax">0</span><div id="budgetBar"><i></i></div></div>
+  </header>
+  <div id="tip"></div>
+  <main>
+    <canvas id="cv"></canvas>
+    <div id="toast"></div>
+    <div class="ov" id="ovIntro">
+      <div class="card">
+        <h2>🏗️ 지진 버티기</h2>
+        <p>같은 건물에 구조 부품을 달아 지진을 견뎌 보세요. 단계가 오를수록 지진이 세지고, 건물도 까다로워져요.</p>
+        <ul>
+          <li>칸을 눌러 부품을 설치해요 (다시 누르면 제거)</li>
+          <li>예산 안에서 설계하고 <b>지진 시작</b>을 눌러요</li>
+          <li>별이 많을수록, 높은 단계일수록 점수가 커져요</li>
+        </ul>
+        <input id="nameIn" maxlength="10" placeholder="이름(별명)을 입력하세요" autocomplete="off">
+        <div class="btns"><button class="btn pri" id="btnStart">시작하기</button><button class="btn" id="btnRank0">🏆 랭킹</button></div>
+      </div>
+    </div>
+    <div class="ov" id="ovResult" hidden><div class="card" id="resCard"></div></div>
+    <div class="ov" id="ovRank" hidden><div class="card" id="rankCard"></div></div>
+  </main>
+  <div id="bottom">
+    <div id="tools"></div>
+    <button id="go">▶ 지진 시작</button>
+  </div>
+</div>
+<script>
+// ===== 시뮬레이션 코어 (순수 계산, 화면과 무관) =====
+const H = 3;          // 한 층 높이(m)
+const BAYS = 3;       // 한 층의 칸 수
+const THETA = 0.02;   // 층간변형각 한계 (2%)
+const K0 = 200;       // 기본 기둥 강성 (층당)
+const BETA = 0.0085;  // 강성비례 감쇠
+const ELEMS = {
+  col:    { label: '기둥 보강', cost: 2, k: 70,  c: 0, m: 0.05 },
+  brace:  { label: '가새',     cost: 3, k: 110, c: 0, m: 0.03 },
+  wall:   { label: '전단벽',   cost: 6, k: 240, c: 0, m: 0.25 },
+  damper: { label: '댐퍼',     cost: 5, k: 10,  c: 6, m: 0.03 }
+};
+const ISO = { cost: 14, T: 1.8, xi: 0.12, limit: 0.35, mass: 1.5 };
+const DT = 1 / 480;
+
+const STAGES = [
+  { name: '작은 학교 건물',   floors: 3, pga: 2.0, dur: 10, budget: 10, seed: 11, fc: 1.3, label: '진도 4', tools: ['col', 'brace'] },
+  { name: '4층 상가 건물',    floors: 4, pga: 3.0, dur: 11, budget: 34, seed: 23, fc: 1.3, label: '진도 5', tools: ['col', 'brace', 'wall'] },
+  { name: '필로티 아파트',    floors: 5, pga: 3.6, dur: 12, budget: 38, seed: 37, fc: 1.3, label: '진도 6', tools: ['col', 'brace', 'wall', 'damper'], soft: [0.5, 1, 1, 1, 1] },
+  { name: '옥상 물탱크 빌딩', floors: 6, pga: 4.0, dur: 13, budget: 50, seed: 41, fc: 1.3, label: '진도 7', tools: ['col', 'brace', 'wall', 'damper'], iso: true, roof: 1.2 },
+  { name: '초고층 타워',      floors: 7, pga: 2.4, dur: 14, budget: 54, seed: 59, fc: 0.7, label: '장주기 진도 7', tools: ['col', 'brace', 'wall', 'damper'], iso: true }
+];
+
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function makeGround(st, dt) {
+  const rnd = mulberry32(st.seed);
+  const n = Math.ceil(st.dur / dt) + 1;
+  const a = new Float32Array(n);
+  const comps = [];
+  for (let j = 0; j < 32; j++) {
+    const f = 0.4 * Math.pow(8 / 0.4, j / 31);
+    const w = Math.exp(-0.5 * Math.pow(Math.log(f / st.fc) / 0.75, 2));
+    comps.push([2 * Math.PI * f, w * (0.6 + 0.8 * rnd()), rnd() * 2 * Math.PI]);
+  }
+  const hold = st.dur * 0.55;
+  let mx = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i * dt;
+    let env;
+    if (t < 2) env = (t / 2) * (t / 2);
+    else if (t < hold) env = 1;
+    else env = Math.exp(-(t - hold) / (st.dur * 0.15));
+    let s = 0;
+    for (let j = 0; j < comps.length; j++) s += comps[j][1] * Math.sin(comps[j][0] * t + comps[j][2]);
+    a[i] = s * env;
+    if (Math.abs(a[i]) > mx) mx = Math.abs(a[i]);
+  }
+  const sc = st.pga / mx;
+  for (let i = 0; i < n; i++) a[i] *= sc;
+  return a;
+}
+
+function buildModel(st, layout, iso) {
+  const N = st.floors, off = iso ? 1 : 0, D = N + off;
+  const m = new Float64Array(D), k = new Float64Array(D), c = new Float64Array(D), lim = new Float64Array(D);
+  let M = 0;
+  for (let s = 0; s < N; s++) {
+    const d = s + off;
+    let ks = K0 * (st.soft ? st.soft[s] : 1), cd = 0, ms = 1;
+    for (let b = 0; b < BAYS; b++) {
+      const e = ELEMS[layout[s][b]];
+      if (e) { ks += e.k; cd += e.c; ms += e.m; }
+    }
+    if (st.roof && s === N - 1) ms += st.roof;
+    m[d] = ms; k[d] = ks; c[d] = BETA * ks + cd; lim[d] = H * THETA;
+    M += ms;
+  }
+  if (iso) {
+    m[0] = ISO.mass; M += ISO.mass;
+    const w = 2 * Math.PI / ISO.T;
+    k[0] = M * w * w; c[0] = 2 * ISO.xi * M * w; lim[0] = ISO.limit;
+  }
+  return { N, D, off, m, k, c, lim, iso };
+}
+
+function createSim(st, layout, iso) {
+  const mod = buildModel(st, layout, iso);
+  const g = makeGround(st, DT);
+  return {
+    mod, g, st, i: 0, n: g.length,
+    x: new Float64Array(mod.D), v: new Float64Array(mod.D),
+    peak: new Float64Array(mod.D), failed: -1, failT: 0
+  };
+}
+
+function stepSim(S) {
+  const { mod, x, v } = S, D = mod.D, m = mod.m, k = mod.k, c = mod.c;
+  const ag = S.g[S.i];
+  for (let d = 0; d < D; d++) {
+    const xb = d > 0 ? x[d - 1] : 0, vb = d > 0 ? v[d - 1] : 0;
+    let f = -k[d] * (x[d] - xb) - c[d] * (v[d] - vb);
+    if (d < D - 1) f += k[d + 1] * (x[d + 1] - x[d]) + c[d + 1] * (v[d + 1] - v[d]);
+    v[d] += (f / m[d] - ag) * DT;
+  }
+  for (let d = 0; d < D; d++) {
+    x[d] += v[d] * DT;
+    const dr = Math.abs(x[d] - (d > 0 ? x[d - 1] : 0)) / mod.lim[d];
+    if (dr > S.peak[d]) S.peak[d] = dr;
+    if (dr >= 1 && S.failed < 0) { S.failed = d; S.failT = S.i * DT; }
+  }
+  S.i++;
+}
+
+function costOf(layout, iso) {
+  let c = iso ? ISO.cost : 0;
+  for (const row of layout) for (const e of row) if (e) c += ELEMS[e].cost;
+  return c;
+}
+
+function runFull(st, layout, iso) {
+  const S = createSim(st, layout, iso);
+  while (S.i < S.n && S.failed < 0) stepSim(S);
+  let pk = 0;
+  for (let d = 0; d < S.peak.length; d++) pk = Math.max(pk, S.peak[d]);
+  return { ok: S.failed < 0, peak: pk, S };
+}
+
+function emptyLayout(N) {
+  const L = [];
+  for (let s = 0; s < N; s++) L.push([null, null, null]);
+  return L;
+}
+
+if (typeof module !== 'undefined') module.exports = { STAGES, ELEMS, ISO, BAYS, emptyLayout, runFull, costOf, createSim, stepSim };
+
+
+// ===== 게임 =====
+const $ = id => document.getElementById(id);
+const cv = $('cv'), ctx = cv.getContext('2d');
+let dpr = 1, W = 300, HH = 300;
+const EXAG = 12;
+const STORE_KEY = 'quake_game_v1';
+let store = { players: {}, last: '' };
+try { const s = localStorage.getItem(STORE_KEY); if (s) store = JSON.parse(s); } catch (e) {}
+function saveStore() { try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (e) {} }
+
+const TIPS = [
+  '<b>3층 학교 건물</b>이에요. 가새나 기둥 보강으로 흔들림을 줄여 보세요. 모든 칸을 채울 필요는 없어요!',
+  '<b>전단벽 해금!</b> 가장 튼튼하지만 비싸고 무거워요. 건물은 아래층일수록 더 큰 힘을 받아요.',
+  '<b>1층이 필로티</b>(기둥만 있는 주차장)라 약해요. 건물은 가장 약한 층(⚠)에서 무너져요. <b>댐퍼 해금!</b>',
+  '<b>옥상에 물탱크</b>가 있어 위쪽이 무거워요. <b>면진 장치 해금!</b> 지반의 흔들림이 건물에 덜 전달돼요.',
+  '<b>장주기 지진동!</b> 초고층은 느리고 크게 흔들려요. 면진·댐퍼·가새를 조합해 보세요.'
+];
+const TOOLDEF = {
+  brace:  { name: '가새',     color: '#e8833a' },
+  col:    { name: '기둥 보강', color: '#475569' },
+  wall:   { name: '전단벽',   color: '#8d97a3' },
+  damper: { name: '댐퍼',     color: '#3b82f6' }
+};
+
+let stageIdx = 0, layout = emptyLayout(3), iso = false, sim = null, mode = 'build';
+let tool = 'brace', hover = null, collapseT = 0, endHold = 0, playerName = '', lastResult = null;
+
+function me() {
+  if (!store.players[playerName]) store.players[playerName] = { best: [null, null, null, null, null] };
+  return store.players[playerName];
+}
+function maxUnlocked() { const b = me().best; let u = 0; while (u < 4 && b[u]) u++; return u; }
+
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('on');
+  clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), 1400);
+}
+
+function renderTabs() {
+  const box = $('tabs'); box.innerHTML = '';
+  const u = maxUnlocked(), b = me().best;
+  for (let i = 0; i < STAGES.length; i++) {
+    const d = document.createElement('button');
+    d.className = 'tab' + (i === stageIdx ? ' cur' : '') + (i > u ? ' locked' : '');
+    const stars = b[i] ? '★'.repeat(b[i].stars) + '☆'.repeat(3 - b[i].stars) : (i > u ? '🔒' : '');
+    d.innerHTML = (i + 1) + '단계<small>' + stars + '</small>';
+    d.onclick = () => { if (i > u) { toast('이전 단계를 먼저 클리어하세요'); return; } startStage(i); };
+    box.appendChild(d);
+  }
+}
+
+function renderTools() {
+  const st = STAGES[stageIdx], box = $('tools'); box.innerHTML = '';
+  const add = (key, label, cost, allowed, selected, isIso) => {
+    const d = document.createElement('button');
+    d.className = 'tool' + (allowed ? '' : ' off') + (selected ? (isIso ? ' on' : ' sel') : '');
+    const col = TOOLDEF[key] ? TOOLDEF[key].color : '#64748b';
+    d.innerHTML = (key === 'erase' ? '' : '<i style="background:' + col + '"></i>') + label + '<small>' + (allowed ? (cost != null ? cost + '점' : '') : '🔒') + '</small>';
+    d.onclick = () => {
+      if (mode !== 'build') return;
+      if (!allowed) { toast('이 부품은 나중 단계에서 해금돼요'); return; }
+      if (isIso) {
+        if (iso) { iso = false; }
+        else { if (costOf(layout, false) + ISO.cost > st.budget) { toast('예산이 부족해요'); return; } iso = true; }
+        renderTools(); renderBudget(); return;
+      }
+      tool = key; renderTools();
+    };
+    box.appendChild(d);
+  };
+  for (const k of ['brace', 'col', 'wall', 'damper']) add(k, TOOLDEF[k].name, ELEMS[k].cost, st.tools.includes(k), tool === k, false);
+  add('iso', iso ? '면진 ON' : '면진 장치', ISO.cost, !!st.iso, iso, true);
+  add('erase', '🧹 지우개', null, true, tool === 'erase', false);
+}
+
+function renderBudget() {
+  const st = STAGES[stageIdx], sp = costOf(layout, iso);
+  $('bSpent').textContent = sp; $('bMax').textContent = st.budget;
+  const bar = document.querySelector('#budgetBar i');
+  bar.style.width = Math.min(100, sp / st.budget * 100) + '%';
+  bar.style.background = sp / st.budget > 0.9 ? '#ef4444' : sp / st.budget > 0.7 ? '#f59e0b' : '#22c55e';
+}
+
+function startStage(i) {
+  stageIdx = i; const st = STAGES[i];
+  layout = emptyLayout(st.floors); iso = false; sim = null; mode = 'build'; hover = null;
+  tool = 'brace'; collapseT = 0; endHold = 0;
+  $('ovResult').hidden = true; $('ovRank').hidden = true;
+  $('tip').innerHTML = '<b>' + (i + 1) + '단계 · ' + st.name + ' · ' + st.label + '</b> — ' + TIPS[i];
+  $('go').textContent = '▶ 지진 시작'; $('go').classList.remove('stop');
+  renderTabs(); renderTools(); renderBudget(); resize();
+}
+
+function startQuake() {
+  if (mode !== 'build') return;
+  const st = STAGES[stageIdx];
+  sim = createSim(st, JSON.parse(JSON.stringify(layout)), iso);
+  mode = 'run'; collapseT = 0; endHold = 0;
+  $('go').textContent = '■ 중단'; $('go').classList.add('stop');
+}
+function abortQuake() {
+  sim = null; mode = 'build';
+  $('go').textContent = '▶ 지진 시작'; $('go').classList.remove('stop');
+}
+
+// ===== 입력 =====
+function geom() {
+  const st = STAGES[stageIdx], N = st.floors;
+  const groundY = HH - Math.max(26, HH * 0.06);
+  const top = 74;
+  const isoH = iso ? 0.6 : 0.2;
+  const fh = Math.max(28, Math.min(84, (groundY - top - 8) / (N + isoH + 0.35)));
+  const bw = Math.max(44, Math.min(96, (W - 190) / 3));
+  const bt = bw * BAYS;
+  const x0 = Math.max(58, (W - bt) / 2 - 6);
+  const y0 = groundY - isoH * fh;
+  return { st, N, groundY, fh, bw, bt, x0, y0, sc: fh / H * EXAG, isoH };
+}
+function hitSlot(px, py) {
+  const g = geom();
+  for (let s = 0; s < g.N; s++) {
+    const yb = g.y0 - s * g.fh, yt = yb - g.fh;
+    if (py < yt || py > yb) continue;
+    for (let b = 0; b < BAYS; b++) {
+      const xl = g.x0 + b * g.bw;
+      if (px >= xl && px <= xl + g.bw) return { s, b };
+    }
+  }
+  return null;
+}
+function applyTool(s, b) {
+  const st = STAGES[stageIdx], cur = layout[s][b];
+  if (tool === 'erase') { if (cur) layout[s][b] = null; }
+  else if (cur === tool) layout[s][b] = null;
+  else {
+    const cost = costOf(layout, iso) - (cur ? ELEMS[cur].cost : 0) + ELEMS[tool].cost;
+    if (cost > st.budget) { toast('예산이 부족해요 💸'); return; }
+    layout[s][b] = tool;
+  }
+  renderBudget();
+}
+function pt(e) { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+cv.addEventListener('pointerdown', e => {
+  if (mode !== 'build') return;
+  const p = pt(e), h = hitSlot(p.x, p.y);
+  if (h) applyTool(h.s, h.b);
+});
+cv.addEventListener('pointermove', e => { if (mode !== 'build') { hover = null; return; } const p = pt(e); hover = hitSlot(p.x, p.y); });
+cv.addEventListener('pointerleave', () => { hover = null; });
+$('go').onclick = () => { if (mode === 'build') startQuake(); else if (mode === 'run') abortQuake(); };
+
+// ===== 결과 =====
+function maxPeak(S) { let m = 0; for (let d = 0; d < S.peak.length; d++) m = Math.max(m, S.peak[d]); return m; }
+
+function finish(ok) {
+  mode = 'result';
+  const st = STAGES[stageIdx], S = sim;
+  const spent = costOf(layout, iso), left = st.budget - spent;
+  const pk = Math.min(1, maxPeak(S));
+  let stars = 0, score = 0;
+  if (ok) {
+    stars = 1;
+    if (pk < 0.8) stars = 2;
+    if (pk < 0.8 && left >= st.budget * 0.25) stars = 3;
+    score = Math.round((600 + 400 * (1 - pk) + 30 * left) * (1 + 0.25 * stageIdx));
+  }
+  lastResult = { ok, stars, score, pk, spent, left };
+  let newBest = false;
+  if (ok) {
+    const b = me().best, o = b[stageIdx];
+    if (!o || score > o.score) { b[stageIdx] = { score, stars: Math.max(stars, o ? o.stars : 0) }; newBest = true; }
+    else if (stars > o.stars) o.stars = stars;
+    store.last = playerName; saveStore();
+  }
+  showResult(ok, S, newBest);
+  renderTabs();
+}
+
+function dmgColor(r) { return r < 0.4 ? '#64748b' : r < 0.65 ? '#d4b106' : r < 0.9 ? '#f97316' : '#dc2626'; }
+
+function hintText(ok, S) {
+  const st = STAGES[stageIdx], off = S.mod.off;
+  if (!ok) {
+    const s = S.failed - off;
+    if (s < 0) return '면진층이 너무 크게 움직였어요. 면진만 믿지 말고 가새·댐퍼로 건물 자체도 보강해 보세요.';
+    if (st.soft && s === 0) return '필로티 1층이 약해서 무너졌어요. 기둥만 있는 층은 힘이 몰려요. 1층에 가새나 전단벽을 넣어 보세요.';
+    if (st.roof && s >= st.floors - 3) return '옥상 물탱크처럼 위가 무거우면 흔들림이 커져요. 위쪽 층의 보강도 신경 써 보세요.';
+    return (s + 1) + '층이 가장 먼저 무너졌어요. 건물은 가장 약한 층이 결정해요! 그 층부터 보강해 보세요.';
+  }
+  if (lastResult.stars === 1) return '아슬아슬하게 버텼어요! 최대 변형이 한계에 가까워요. 약한 층을 보강하거나 댐퍼로 흔들림을 줄여 보세요.';
+  if (lastResult.stars === 2) return '튼튼해요! 예산을 25% 이상 남기면 별 3개예요. 꼭 필요한 곳에만 쓰는 효율적인 설계를 찾아보세요.';
+  return '완벽해요! 튼튼하면서도 예산까지 아꼈어요. 다음 단계에 도전해 보세요.';
+}
+
+function showResult(ok, S, newBest) {
+  const st = STAGES[stageIdx], r = lastResult, off = S.mod.off;
+  let rows = '';
+  for (let s = st.floors - 1; s >= 0; s--) {
+    const v = Math.min(1, S.peak[s + off]);
+    rows += '<div><span class="l">' + (s + 1) + '층</span><span class="bar"><i style="width:' + Math.round(v * 100) + '%;background:' + dmgColor(v) + '"></i></span><span class="v">' + Math.round(v * 100) + '%</span></div>';
+  }
+  if (S.mod.iso) { const v = Math.min(1, S.peak[0]); rows += '<div><span class="l">면진층</span><span class="bar"><i style="width:' + Math.round(v * 100) + '%;background:' + dmgColor(v) + '"></i></span><span class="v">' + Math.round(v * 100) + '%</span></div>'; }
+  const starsHtml = '<div class="stars">' + '★'.repeat(r.stars) + '<span class="x">' + '★'.repeat(3 - r.stars) + '</span></div>';
+  const last = stageIdx === STAGES.length - 1;
+  $('resCard').innerHTML =
+    '<h2>' + (ok ? '🏢 버텼어요!' : '💥 무너졌어요…') + '</h2>' +
+    '<p>' + (ok ? (stageIdx + 1) + '단계 · ' + st.name + ' 클리어' : (S.failed - off < 0 ? '면진층' : (S.failed - off + 1) + '층') + '에서 ' + S.failT.toFixed(1) + '초에 한계를 넘었어요') + '</p>' +
+    (ok ? starsHtml : '') +
+    '<div class="stats"><div class="stat"><b>' + Math.round(r.pk * 100) + '%</b>최대 변형</div><div class="stat"><b>' + r.spent + '/' + st.budget + '</b>사용 예산</div><div class="stat"><b>' + (ok ? r.score : '-') + '</b>점수' + (ok && newBest ? ' 🆕' : '') + '</div></div>' +
+    '<div class="dm">' + rows + '</div>' +
+    '<div class="hint">💡 ' + hintText(ok, S) + '</div>' +
+    '<div class="btns"><button class="btn" id="rRetry">' + (ok ? '다시 설계' : '수정해서 재도전') + '</button>' +
+    (ok && !last ? '<button class="btn pri" id="rNext">다음 단계 ▶</button>' : '') +
+    '<button class="btn dark" id="rRank">🏆 랭킹</button></div>';
+  $('ovResult').hidden = false;
+  $('rRetry').onclick = () => { $('ovResult').hidden = true; sim = null; mode = 'build'; $('go').textContent = '▶ 지진 시작'; $('go').classList.remove('stop'); };
+  if ($('rNext')) $('rNext').onclick = () => startStage(stageIdx + 1);
+  $('rRank').onclick = () => showRank();
+}
+
+function showRank() {
+  const list = [];
+  for (const name in store.players) {
+    const b = store.players[name].best; let cleared = 0, total = 0, stars = 0;
+    b.forEach(x => { if (x) { cleared++; total += x.score; stars += x.stars; } });
+    if (cleared) list.push({ name, cleared, total, stars });
+  }
+  list.sort((a, b) => b.cleared - a.cleared || b.total - a.total);
+  let rows = '';
+  list.slice(0, 10).forEach((p, i) => {
+    rows += '<tr class="' + (p.name === playerName ? 'me' : '') + '"><td>' + (i + 1) + '</td><td class="n">' + p.name + '</td><td>' + p.cleared + '/5</td><td>★' + p.stars + '</td><td><b>' + p.total + '</b></td></tr>';
+  });
+  if (!rows) rows = '<tr><td colspan="5" style="color:#94a3b8;padding:18px">아직 기록이 없어요. 1단계를 클리어해 보세요!</td></tr>';
+  let code = '';
+  if (playerName && store.players[playerName]) {
+    const b = store.players[playerName].best; let c = 0, t = 0; b.forEach(x => { if (x) { c++; t += x.score; } });
+    code = '<div class="code">내 기록 코드: ' + playerName + ' | ' + c + '단계 | ' + t + '점</div>';
+  }
+  $('rankCard').innerHTML = '<h2>🏆 랭킹</h2><p>이 기기에 저장된 기록이에요. (클리어 단계 → 총점 순)</p><table><tr><th>#</th><th>이름</th><th>단계</th><th>별</th><th>총점</th></tr>' + rows + '</table>' + code +
+    '<div class="btns"><button class="btn pri" id="rkClose">닫기</button></div>';
+  $('ovRank').hidden = false;
+  $('rkClose').onclick = () => { $('ovRank').hidden = true; };
+}
+
+// ===== 그리기 =====
+function quad(a, b, c, d) { ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); ctx.lineTo(d[0], d[1]); ctx.closePath(); }
+function line(a, b) { ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }
+
+function weakest(g) {
+  // 층별 (강성 / 위에 실린 질량) 지수가 가장 낮은 층
+  const mod = buildModel(g.st, layout, false);
+  let best = -1, bv = 1e9, vals = [];
+  for (let s = 0; s < g.N; s++) {
+    let M = 0; for (let j = s; j < g.N; j++) M += mod.m[j];
+    const q = mod.k[s] / M; vals.push(q);
+    if (q < bv) { bv = q; best = s; }
+  }
+  return { best, vals };
+}
+
+function draw() {
+  const g = geom(), st = g.st, N = g.N;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, HH);
+  const sk = ctx.createLinearGradient(0, 0, 0, HH);
+  sk.addColorStop(0, '#bfdbfe'); sk.addColorStop(1, '#f1f5f9');
+  ctx.fillStyle = sk; ctx.fillRect(0, 0, W, HH);
+
+  const running = sim && (mode === 'run' || mode === 'result');
+  const ag = running && sim.i > 0 ? sim.g[Math.min(sim.i, sim.g.length - 1)] : 0;
+  const shake = running && sim.failed < 0 ? ag * 1.1 : (sim && sim.failed >= 0 ? Math.sin(collapseT * 40) * Math.max(0, 1 - collapseT) * 4 : 0);
+
+  ctx.save();
+  ctx.translate(shake, 0);
+
+  // 지면
+  ctx.fillStyle = '#a8a29e'; ctx.fillRect(-20, g.groundY, W + 40, HH - g.groundY + 20);
+  ctx.fillStyle = '#78716c'; ctx.fillRect(-20, g.groundY, W + 40, 4);
+
+  const off = iso ? 1 : 0;
+  const X = k => { if (!sim) return 0; if (iso) { const b0 = sim.x[0] * g.sc * 0.35; return k === 0 ? b0 : b0 + (sim.x[k] - sim.x[0]) * g.sc; } return k === 0 ? 0 : sim.x[k - 1] * g.sc; };
+  const yF = k => g.y0 - k * g.fh;
+
+  // 붕괴 계산
+  let fallFrom = N + 5, failedStory = -2;
+  if (sim && sim.failed >= 0) { failedStory = sim.failed - off; fallFrom = failedStory + 1; }
+  const peak = (s) => sim ? Math.min(1, sim.peak[s + off]) : 0;
+
+  // 바닥 슬래브 위치 (붕괴 반영)
+  const slab = [];
+  for (let k = 0; k <= N; k++) {
+    let x = X(k), y = yF(k);
+    if (k >= fallFrom) {
+      const tau = collapseT - (k - fallFrom) * 0.05;
+      const restBase = fallFrom >= 1 ? yF(fallFrom - 1) : g.y0;
+      const target = restBase - 7 * (k - fallFrom + 1) + (fallFrom >= 1 ? 0 : 0);
+      if (tau > 0) { y = Math.min(target + 4, y + 0.5 * 1500 * tau * tau); x += (k % 2 ? 1 : -1) * Math.min(26, tau * 40); }
+    }
+    slab.push([x, y]);
+  }
+
+  // 면진층 / 기초
+  if (iso) {
+    for (let c = 0; c <= BAYS; c++) {
+      const xb = g.x0 + c * g.bw, xt = xb + slab[0][0];
+      ctx.fillStyle = '#334155'; quad([xb - 5, g.groundY], [xb + 5, g.groundY], [xt + 5, slab[0][1]], [xt - 5, slab[0][1]]); ctx.fill();
+      ctx.strokeStyle = '#fb923c'; ctx.lineWidth = 1.5;
+      for (let j = 1; j < 3; j++) { const f = j / 3; line([xb - 5 + slab[0][0] * f, g.groundY + (slab[0][1] - g.groundY) * f], [xb + 5 + slab[0][0] * f, g.groundY + (slab[0][1] - g.groundY) * f]); }
+    }
+    ctx.fillStyle = '#57534e'; ctx.fillRect(g.x0 - 14, g.groundY - 3, g.bt + 28, 5);
+  } else {
+    ctx.fillStyle = '#57534e'; ctx.fillRect(g.x0 - 10, g.y0, g.bt + 20, g.groundY - g.y0 + 2);
+  }
+
+  // 층 (아래에서 위로)
+  const wk = weakest(g);
+  for (let s = 0; s < N; s++) {
+    const bot = slab[s], top = slab[s + 1];
+    if (s >= Math.max(0, failedStory) && failedStory > -2) { continue; } // 붕괴된 층은 잔해로 표현
+    const pk = peak(s), col = sim ? dmgColor(pk) : '#64748b';
+    for (let b = 0; b < BAYS; b++) {
+      const bl = [g.x0 + b * g.bw + bot[0], bot[1]], br = [g.x0 + (b + 1) * g.bw + bot[0], bot[1]];
+      const tl = [g.x0 + b * g.bw + top[0], top[1]], tr = [g.x0 + (b + 1) * g.bw + top[0], top[1]];
+      // 배경
+      ctx.fillStyle = 'rgba(224,242,254,.55)'; quad(bl, br, tr, tl); ctx.fill();
+      const e = layout[s][b];
+      if (e === 'wall') {
+        ctx.fillStyle = '#9ca3af'; quad(bl, br, tr, tl); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,.45)'; ctx.lineWidth = 1;
+        for (let j = 1; j < 5; j++) { const f = j / 5; line([bl[0] + (br[0] - bl[0]) * f, bl[1]], [tl[0] + (tr[0] - tl[0]) * f, tl[1]]); }
+        ctx.strokeStyle = '#6b7280'; ctx.lineWidth = 2; quad(bl, br, tr, tl); ctx.stroke();
+      } else if (e === 'brace') {
+        ctx.strokeStyle = '#e8833a'; ctx.lineWidth = 3.5; line(bl, tr); line(br, tl);
+      } else if (e === 'damper') {
+        ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 3; line(bl, tr);
+        const p = f => [bl[0] + (tr[0] - bl[0]) * f, bl[1] + (tr[1] - bl[1]) * f];
+        ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 9; ctx.lineCap = 'round'; line(p(0.3), p(0.62)); ctx.lineCap = 'butt';
+        ctx.fillStyle = '#1e3a8a'; ctx.beginPath(); ctx.arc(bl[0], bl[1], 3, 0, 6.3); ctx.arc(tr[0], tr[1], 3, 0, 6.3); ctx.fill();
+      } else if (!e && mode === 'build') {
+        const hv = hover && hover.s === s && hover.b === b;
+        ctx.setLineDash([4, 4]); ctx.strokeStyle = hv ? '#f97316' : 'rgba(100,116,139,.45)'; ctx.lineWidth = hv ? 2.5 : 1.2;
+        quad([bl[0] + 3, bl[1] - 3], [br[0] - 3, br[1] - 3], [tr[0] - 3, tr[1] + 3], [tl[0] + 3, tl[1] + 3]); ctx.stroke(); ctx.setLineDash([]);
+        if (hv && tool !== 'erase') { ctx.fillStyle = 'rgba(249,115,22,.18)'; ctx.fill(); }
+        ctx.fillStyle = hv ? '#f97316' : 'rgba(100,116,139,.55)'; ctx.font = 'bold ' + Math.round(g.fh * 0.4) + 'px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('+', (bl[0] + tr[0]) / 2, (bl[1] + tr[1]) / 2);
+      }
+      if (mode === 'build' && e && hover && hover.s === s && hover.b === b) { ctx.strokeStyle = '#f97316'; ctx.lineWidth = 2.5; quad(bl, br, tr, tl); ctx.stroke(); }
+    }
+    // 기둥
+    for (let c = 0; c <= BAYS; c++) {
+      const a = [g.x0 + c * g.bw + bot[0], bot[1]], z = [g.x0 + c * g.bw + top[0], top[1]];
+      let thick = 0;
+      if (c > 0 && layout[s][c - 1] === 'col') thick++;
+      if (c < BAYS && layout[s][c] === 'col') thick++;
+      ctx.strokeStyle = thick ? (sim ? col : '#334155') : col; ctx.lineWidth = 4 + thick * 3.5; line(a, z);
+    }
+    // 필로티 표시
+    if (st.soft && st.soft[s] < 1 && mode === 'build') {
+      ctx.fillStyle = 'rgba(71,85,105,.7)'; ctx.font = '600 ' + Math.max(10, g.fh * 0.22) + 'px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('필로티', g.x0 + g.bt / 2 + bot[0], (bot[1] + top[1]) / 2 + g.fh * 0.3);
+    }
+    // 층 라벨 / 막대
+    const midY = (bot[1] + top[1]) / 2;
+    ctx.fillStyle = '#475569'; ctx.font = '700 11px sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText((s + 1) + 'F', g.x0 - 14, midY);
+    const bx = g.x0 + g.bt + 20, bwid = Math.max(34, Math.min(74, W - bx - 10));
+    ctx.fillStyle = 'rgba(15,23,42,.1)'; ctx.fillRect(bx, midY - 4, bwid, 8);
+    if (mode === 'build') {
+      const mx = Math.max.apply(null, wk.vals);
+      const f = Math.min(1, wk.vals[s] / (mx * 1.0));
+      ctx.fillStyle = s === wk.best ? '#ef4444' : '#22c55e'; ctx.fillRect(bx, midY - 4, bwid * f, 8);
+      if (s === wk.best) { ctx.fillStyle = '#ef4444'; ctx.font = '700 11px sans-serif'; ctx.textAlign = 'left'; ctx.fillText('⚠ 가장 약함', bx, midY - 12); }
+    } else {
+      ctx.fillStyle = dmgColor(pk); ctx.fillRect(bx, midY - 4, bwid * pk, 8);
+    }
+  }
+  if (mode === 'build') { ctx.fillStyle = '#64748b'; ctx.font = '600 10px sans-serif'; ctx.textAlign = 'left'; ctx.fillText('층별 강도 ↓', g.x0 + g.bt + 20, g.y0 - N * g.fh - 12); }
+
+  // 슬래브 (지붕 포함)
+  for (let k = 0; k <= N; k++) {
+    if (k === 0 && !iso) continue;
+    const [dx, y] = slab[k];
+    ctx.fillStyle = k === N ? '#475569' : '#cbd5e1'; ctx.strokeStyle = '#475569'; ctx.lineWidth = 1.2;
+    ctx.fillRect(g.x0 - 8 + dx, y - 4, g.bt + 16, 8); ctx.strokeRect(g.x0 - 8 + dx, y - 4, g.bt + 16, 8);
+  }
+  // 옥상 물탱크
+  if (st.roof && fallFrom > N) {
+    const [dx, y] = slab[N], tx = g.x0 + g.bt * 0.72 + dx, tw = g.bt * 0.22, th = g.fh * 0.5;
+    ctx.fillStyle = '#38bdf8'; ctx.fillRect(tx, y - 4 - th, tw, th); ctx.strokeStyle = '#0369a1'; ctx.lineWidth = 2; ctx.strokeRect(tx, y - 4 - th, tw, th);
+    ctx.fillStyle = '#0c4a6e'; ctx.font = '700 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('물탱크', tx + tw / 2, y - 4 - th / 2);
+  } else if (st.roof && fallFrom <= N) {
+    const [dx, y] = slab[N]; ctx.fillStyle = '#38bdf8'; ctx.fillRect(g.x0 + g.bt * 0.72 + dx, y - 14, g.bt * 0.22, 12);
+  }
+  // 붕괴 먼지
+  if (failedStory > -2 && collapseT > 0.1) {
+    const yb = fallFrom >= 1 ? yF(fallFrom - 1) : g.y0;
+    for (let i = 0; i < 9; i++) {
+      const a = collapseT * (0.8 + i * 0.1), r = 6 + a * 14, alpha = Math.max(0, 0.45 - collapseT * 0.18);
+      ctx.fillStyle = 'rgba(120,113,108,' + alpha + ')';
+      ctx.beginPath(); ctx.arc(g.x0 + (i + 0.5) / 9 * g.bt + Math.sin(i * 3.1) * 16, yb - a * 6 - (i % 3) * 5, r, 0, 6.3); ctx.fill();
+    }
+    ctx.fillStyle = '#78716c';
+    for (let i = 0; i < 14; i++) { const rx = g.x0 + ((i * 53) % 100) / 100 * g.bt, ry = yb - 4 - (i % 3) * 4; ctx.fillRect(rx - 14 + (i % 5) * 4, ry, 9 + (i % 4) * 3, 5); }
+  }
+  ctx.restore();
+
+  // 지진계 HUD
+  const hx = 10, hy = 8, hw = Math.min(210, W * 0.5), hh = 54;
+  ctx.fillStyle = 'rgba(15,23,42,.88)'; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(hx, hy, hw, hh, 8) : ctx.rect(hx, hy, hw, hh); ctx.fill();
+  ctx.strokeStyle = 'rgba(148,163,184,.35)'; ctx.lineWidth = 1; line([hx + 6, hy + 36], [hx + hw - 6, hy + 36]);
+  ctx.fillStyle = '#e2e8f0'; ctx.font = '700 11px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  const gA = st.pga / 9.8;
+  if (sim && (mode === 'run' || mode === 'result')) {
+    ctx.fillText('지진 ' + (sim.i * DT).toFixed(1) + ' / ' + st.dur.toFixed(0) + '초', hx + 8, hy + 5);
+    ctx.strokeStyle = '#fb923c'; ctx.lineWidth = 1.2; ctx.beginPath();
+    const step = Math.max(1, Math.floor(sim.n / (hw * 1.5)));
+    for (let i = 0; i < sim.i; i += step) {
+      const px = hx + 6 + (i / sim.n) * (hw - 12), py = hy + 36 - sim.g[i] / st.pga * 14;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+  } else {
+    ctx.fillText(st.label + ' · 최대 가속도 ' + gA.toFixed(2) + 'g', hx + 8, hy + 5);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '600 10px sans-serif'; ctx.fillText('부품을 설치하고 지진을 시작하세요', hx + 8, hy + 40);
+  }
+  ctx.fillStyle = 'rgba(15,23,42,.55)'; ctx.font = '600 10px sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
+  ctx.fillText('흔들림 ' + EXAG + '배 확대 표시', W - 8, HH - 8);
+  if (mode === 'run' && sim && sim.failed < 0) {
+    ctx.fillStyle = '#dc2626'; ctx.font = '800 15px sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+    ctx.fillText('지진 발생!', W - 12, 12);
+  }
+  if (sim && sim.failed >= 0 && mode === 'run') {
+    ctx.fillStyle = 'rgba(220,38,38,.9)'; ctx.font = '900 ' + Math.min(44, W * 0.1) + 'px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('붕괴!', W / 2, g.groundY - g.fh * N * 0.5);
+  }
+}
+
+// ===== 루프 =====
+let lastTs = 0;
+function update(dt) {
+  if (mode !== 'run' || !sim) return;
+  if (sim.failed < 0 && sim.i < sim.n) {
+    const steps = Math.min(60, Math.max(1, Math.round(dt / DT)));
+    for (let i = 0; i < steps; i++) { if (sim.i >= sim.n || sim.failed >= 0) break; stepSim(sim); }
+  }
+  if (sim.failed >= 0) { collapseT += dt; if (collapseT > 2.2) finish(false); }
+  else if (sim.i >= sim.n) { endHold += dt; if (endHold > 0.8) finish(true); }
+}
+function frame(ts) {
+  const dt = Math.min(0.05, (ts - lastTs) / 1000 || 0.016); lastTs = ts;
+  update(dt); draw(); requestAnimationFrame(frame);
+}
+function resize() {
+  dpr = window.devicePixelRatio || 1;
+  const r = cv.getBoundingClientRect(); W = r.width; HH = r.height;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(HH * dpr);
+}
+window.addEventListener('resize', resize);
+
+// ===== 시작 =====
+$('nameIn').value = store.last || '';
+function begin() {
+  const n = $('nameIn').value.trim().slice(0, 10) || '익명';
+  playerName = n; store.last = n; me(); saveStore();
+  $('ovIntro').hidden = true;
+  startStage(maxUnlocked());
+}
+$('btnStart').onclick = begin;
+$('nameIn').addEventListener('keydown', e => { if (e.key === 'Enter') begin(); });
+$('btnRank0').onclick = () => { showRank(); };
+resize();
+$('ovIntro').hidden = false;
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
